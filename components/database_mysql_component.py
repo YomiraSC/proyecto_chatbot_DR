@@ -341,7 +341,7 @@ class DataBaseMySQLManager:
         self.connection.commit()
         cursor.close()
 
-    def agregar_pago_y_confirmar_cita(self, cliente_id, monto, metodo_pago,first_name, last_name):
+    def agregar_pago_y_confirmar_cita(self, cliente_id, monto, metodo_pago,first_name, last_name,num_operacion=""):
         """
         Agrega un pago relacionado a la cita más próxima del cliente en estado 'agendada'
         y cambia el estado de esa cita a 'confirmada'.
@@ -375,10 +375,10 @@ class DataBaseMySQLManager:
         
         # Insertar el pago relacionado a la cita encontrada
         query_pago = """
-            INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago,first_name,last_name)
+            INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago,first_name,last_name,num_operacion)
             VALUES (%s, %s, %s, %s, %s, 'completado',%s,%s)
         """
-        cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago,first_name,last_name))
+        cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago,first_name,last_name,num_operacion))
         pago_id = cursor.lastrowid
 
         # Cambiar el estado de la cita a 'confirmada'

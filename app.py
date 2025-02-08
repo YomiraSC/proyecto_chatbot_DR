@@ -219,7 +219,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                     if intencion_list[1] == "":
                         response_message = f"""{{"mensaje": "Podrías indicarme tu número de operación de tu yapeo para poder registrar tu pago y confirmar tu cita por favor."}}"""
                     else:
-                        dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id_mysql, "-", "Yape",cliente_mysql["nombre"],cliente_mysql["primer_apellido"])
+                        dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id_mysql, "-", "Yape",cliente_mysql["nombre"],cliente_mysql["apellido"],intencion_list[1])
                         
                         nuevo_estado = 'cita agendada'   
                         if es_transicion_valida(estado_actual, nuevo_estado):
