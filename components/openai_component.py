@@ -1,6 +1,6 @@
 from openai import OpenAI
 from api_keys.api_keys import openai_api_key
-from prompt.prompt import prompt_intenciones, prompt_lead_estado, prompt_cliente_nombre, prompt_lead_estado_zoho, prompt_intencionesv2,prompt_consulta_v4
+from prompt.prompt import prompt_intenciones, prompt_lead_estado, prompt_cliente_nombre, prompt_lead_estado_zoho, prompt_intencionesv2,prompt_consulta_v4, prompt_consulta_v5, prompt_intencionesv3
 from helpers.helpers import formatear_conversacion, formatear_historial_conversaciones, formatear_horarios_disponibles
 import pytz
 from datetime import datetime
@@ -26,7 +26,7 @@ class OpenAIManager:
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": prompt_intencionesv2(datetime.now(pytz.timezone("America/Lima")).strftime("%Y-%m-%d")) + conversacion_actual_formateada},
+                {"role": "system", "content": prompt_intencionesv3(datetime.now(pytz.timezone("America/Lima")).strftime("%Y-%m-%d")) + conversacion_actual_formateada},
                 #{"role": "user", "content": conversacion_actual_formateada}
             ],
             max_tokens=100,
@@ -40,7 +40,7 @@ class OpenAIManager:
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": prompt_consulta_v4(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
+                {"role": "system", "content": prompt_consulta_v5(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
                     + f"\n Los horarios disponibles para que le digas al cliente son {horarios_disponibles}"},
             ],
             max_tokens=150,
@@ -51,8 +51,8 @@ class OpenAIManager:
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": prompt_consulta_v4(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
-                    + "\n Dile que la cita ha sido reservada para  el ...  y mandale el link pago mencionandole que atraves de este link puede pagar usando yape, plin o tarjetas credito/debito. Recuerda indicarle al cliente que dentro del link no debe ingresar nada donde dice N° Orden y en donde dice celular ingresar el numero de celular desde donde nos esta escribiendo por favor para poder asociar el pago a su cita.  }"},
+                {"role": "system", "content": prompt_consulta_v5(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
+                    + "\n Dile que la cita ha sido reservada para el ... y mándale la información para pagar vía Yape. Indícale que debe realizar el pago total o, si lo prefiere, un abono parcial (mínimo 30 soles) a través de Yape al número 943507504. Recuerda pedirle que, una vez efectuado el pago, nos envíe el número de operación del yapeo para poder registrar su pago. "},
             ],
             max_tokens=150,
         )
@@ -62,7 +62,7 @@ class OpenAIManager:
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": prompt_consulta_v4(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
+                {"role": "system", "content": prompt_consulta_v5(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
                     + "\n Dile que en esta fecha y horario el cliente ya tiene una cita agendada. Responde adecuadamente. }"},
             ],
             max_tokens=150,
@@ -73,7 +73,7 @@ class OpenAIManager:
         response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": prompt_consulta_v4(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
+                {"role": "system", "content": prompt_consulta_v5(cliente_mysql,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
                     },
             ],
             max_tokens=150,

@@ -216,17 +216,19 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
 
                 elif intencion_list[0] == 4:
                     print("Ingreso a la intencion 4")
-                    # genero link de pago con culqui
-                    link_pago = "https://express.culqi.com/pago/HXHKR025JY"
-                    
-                    nuevo_estado = 'promesas de pago'   
-                    if es_transicion_valida(estado_actual, nuevo_estado):
-                        cliente_mysql["estado"] = 'promesas de pago'
-                        dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
-                        dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
+                    if intencion_list[1] == "":
+                        response_message = f"""{{"mensaje": "Podrías indicarme tu número de operación de tu yapeo para poder registrar tu pago y confirmar tu cita por favor."}}"""
                     else:
-                        print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
-                    response_message = openai.consultaPago(cliente_mysql,link_pago, conversation_actual, conversation_history,cliente_nuevo,campania)
+                        dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id_mysql, "-", "Yape",cliente_mysql["nombre"],cliente_mysql["primer_apellido"])
+                        
+                        nuevo_estado = 'cita agendada'   
+                        if es_transicion_valida(estado_actual, nuevo_estado):
+                            cliente_mysql["estado"] = nuevo_estado
+                            dbMySQLManager.actualizar_estado_cliente(cliente_id_mysql, nuevo_estado)
+                            dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
+                        else:
+                            print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
+                        response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history,cliente_nuevo,campania)
 
                 elif intencion_list[0] == 5:
                     if intencion_list[1] == "":
@@ -398,6 +400,10 @@ def obtener_cliente_id_por_charge(charge):
 @celery.task
 def procesar_culqi_webhook(data):
     try:
+        twilio = TwilioManager()
+        calendar = GoogleCalendarManager()
+        dbMongoManager = DataBaseMongoDBManager()
+        dbMySQLManager = DataBaseMySQLManager()
         # Procesar el contenido de la notificación
         evento = data.get('type')
         if evento == 'charge.creation.succeeded':  # Verifica si es el evento correcto
@@ -414,6 +420,7 @@ def procesar_culqi_webhook(data):
                     metodo_pago = "link de pago"
                     dbMySQLManager.agregar_pago_y_confirmar_cita(cliente_id, monto, metodo_pago,first_name,last_name)
 
+                    dbMySQLManager.actualizar_estado_cliente(cliente_id, 'cita agendada')
                     # Actualiza Google Calendar y envía confirmación al cliente
                     cita = dbMySQLManager.obtener_cita_mas_cercana(cliente_id)
                     if cita:
