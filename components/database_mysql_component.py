@@ -376,7 +376,7 @@ class DataBaseMySQLManager:
         # Insertar el pago relacionado a la cita encontrada
         query_pago = """
             INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago,first_name,last_name,num_operacion)
-            VALUES (%s, %s, %s, %s, %s, 'completado',%s,%s)
+            VALUES (%s, %s, %s, %s, %s, 'completado',%s,%s,%s)
         """
         cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago,first_name,last_name,num_operacion))
         pago_id = cursor.lastrowid
