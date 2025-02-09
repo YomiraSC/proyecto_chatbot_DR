@@ -19,6 +19,17 @@ class OpenAIManager:
         )
         return response.choices[0].message.content.strip()
     
+    def consultaNumOperacion(self, cliente,conversation_actual, conversation_history,cliente_nuevo,campania):
+        response = self.client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": prompt_consulta_v4(cliente,cliente_nuevo,campania) + formatear_conversacion(conversation_actual)
+                 + f"\n Dile que su pago ya fue registrado con éxito y su cita ha sido confirmada. ¡Nos vemos en la cita!"},
+            ],
+            max_tokens=250,
+        )
+        return response.choices[0].message.content.strip()
+    
     def clasificar_intencion(self, conversation_actual, conversation_history):
         conversacion_actual_formateada = formatear_conversacion(conversation_actual)
         #conversacion_history_formateada = formatear_historial_conversaciones(conversation_history)

@@ -228,7 +228,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                             dbMySQLManager.actualizar_estado_historico_cliente(cliente_id_mysql, nuevo_estado)
                         else:
                             print(f"No se actualiza el estado desde {estado_actual} a {nuevo_estado}.")
-                        response_message = openai.consulta(cliente_mysql, conversation_actual, conversation_history,cliente_nuevo,campania)
+                        response_message = openai.consultaNumOperacion(cliente_mysql, conversation_actual, conversation_history,cliente_nuevo,campania)
 
                 elif intencion_list[0] == 5:
                     if intencion_list[1] == "":
