@@ -181,7 +181,7 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
 
                     print("Ingreso a la intencion 3")             
                     print("Fecha y hora de la cita:", intencion_list[1].lstrip())
-                    reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente_mysql['nombre']}",duration_minutes=30)
+                    reserva_cita = calendar.reservar_cita(intencion_list[1].lstrip(), summary=f"Cita reservada para {cliente_mysql['nombre']}",duration_minutes=20)
                     if not reserva_cita:
                         response_message = f"""{{"mensaje": "Hubo un error al reservar la cita. Por favor, intenta nuevamente."}}"""
                     elif reserva_cita == "Horario no disponible":
@@ -211,7 +211,8 @@ def enviar_respuesta(celular, cliente_nuevo, profileName):
                             fecha_cita=fecha_cita,
                             motivo="Consulta de cita",
                             estado_cita="agendada",
-                            conversacion_id=conversacion_id_mysql
+                            conversacion_id=conversacion_id_mysql,
+                            duracion = 20 # minutos
                         )        
 
                 elif intencion_list[0] == 4:

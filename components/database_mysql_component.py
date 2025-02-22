@@ -97,13 +97,13 @@ class DataBaseMySQLManager:
         cursor.execute(query, (cliente_id,))
         return cursor.fetchall()
 
-    def insertar_cita(self, cliente_id, fecha_cita, motivo, estado_cita="agendada", conversacion_id=None):
+    def insertar_cita(self, cliente_id, fecha_cita, motivo, estado_cita="agendada", conversacion_id=None,duracion=30):
         self._reconnect_if_needed()
         """Inserta una nueva cita para un cliente en la tabla de citas."""
         cursor = self.connection.cursor()
-        query = """INSERT INTO citas (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id)
-                   VALUES (%s, %s, %s, %s, %s)"""
-        cursor.execute(query, (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id))
+        query = """INSERT INTO citas (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id, duracion)
+                   VALUES (%s, %s, %s, %s, %s,%s)"""
+        cursor.execute(query, (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id,duracion))
         self.connection.commit()
         return cursor.lastrowid
 
