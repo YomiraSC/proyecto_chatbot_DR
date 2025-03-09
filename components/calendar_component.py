@@ -70,8 +70,8 @@ class GoogleCalendarManager:
         else:
             working_hours = []  # Otros días no tienen disponibilidad
 
-        if fecha == '2025-02-27':
-            working_hours = [{"start": dt.time(10, 00), "end": dt.time(18, 00)}]
+        if fecha == '2025-03-19':
+            working_hours = [{"start": dt.time(16, 00), "end": dt.time(20, 30)}]
 
         start_of_day = lima_tz.localize(dt.datetime.combine(input_date, dt.time(0, 0)))
         end_of_day = lima_tz.localize(dt.datetime.combine(input_date, dt.time(23, 59, 59)))

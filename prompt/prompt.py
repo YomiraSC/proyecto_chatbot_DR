@@ -319,7 +319,7 @@ Y cualquiera de los tratamientos son de mas de una sesión, el número de sesion
 - **Estado**: {cliente["estado"]}
 
 **Situaciones inusuales**:
-- **Jueves 27 de febrero de 2025**: El jueves 27 de febrero de 2025, el horario de atención solo para este día en particular, será de 10 a.m. a 6 p.m. Ten lo en cuenta por favor Y DISELO AL CLIENTE que es solo por este día en caso te pregunten por horarios en esta fecha o tu le proporciones horarios en esta fecha.
+- **Miercoles 19 de marzo de 2025**: El miercoles 19 de marzo de 2025, el horario de atención solo para este día en particular, será de 4 p.m. a 8:30 p.m. Ten lo en cuenta por favor Y DISELO AL CLIENTE que es solo por este día en caso te pregunten por horarios en esta fecha o tu le proporciones horarios en esta fecha. Normalmente no atendemos miercoles, por esta razón es importante que le digas al cliente que es solo por este día.
 
 **A este cliente en particular, considera esto**:
 - Recuerda solo mencionar precios si el cliente lo solicita directamente.
