@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+import pytz
 
 class DataBaseMySQLManager:
     def __init__(self):
@@ -45,7 +46,7 @@ class DataBaseMySQLManager:
         """Verifica si un cliente ya existe en la base de datos usando el número de celular."""
         return self.obtener_id_cliente_por_celular(celular) is not None
 
-    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="activo"):
+    def insertar_cliente(self, documento_identidad, tipo_documento, nombre, apellido, celular, email,estado="nuevo"):
         self._reconnect_if_needed()
         """Inserta un nuevo cliente en la tabla de clientes si no existe ya."""
         if not self.existe_cliente_por_celular(celular):
@@ -96,13 +97,13 @@ class DataBaseMySQLManager:
         cursor.execute(query, (cliente_id,))
         return cursor.fetchall()
 
-    def insertar_cita(self, cliente_id, fecha_cita, motivo, estado_cita="agendada", conversacion_id=None):
+    def insertar_cita(self, cliente_id, fecha_cita, motivo, estado_cita="agendada", conversacion_id=None,duracion=30):
         self._reconnect_if_needed()
         """Inserta una nueva cita para un cliente en la tabla de citas."""
         cursor = self.connection.cursor()
-        query = """INSERT INTO citas (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id)
-                   VALUES (%s, %s, %s, %s, %s)"""
-        cursor.execute(query, (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id))
+        query = """INSERT INTO citas (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id, duracion)
+                   VALUES (%s, %s, %s, %s, %s,%s)"""
+        cursor.execute(query, (cliente_id, fecha_cita, motivo, estado_cita, conversacion_id,duracion))
         self.connection.commit()
         return cursor.lastrowid
 
@@ -112,6 +113,28 @@ class DataBaseMySQLManager:
         cursor = self.connection.cursor(dictionary=True)
         query = "SELECT * FROM citas WHERE cliente_id = %s"
         cursor.execute(query, (cliente_id,))
+        return cursor.fetchall()
+    
+    def obtener_citas_por_estado(self, estado_cita):
+        self._reconnect_if_needed()
+        """Obtiene todas las citas en un estado específico."""
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM citas WHERE estado_cita = %s"
+        cursor.execute(query, (estado_cita,))
+        return cursor.fetchall()
+    
+    def obtener_citas_por_estado_con_numero(self, estado_cita):
+        self._reconnect_if_needed()
+        """Obtiene todas las citas en un estado específico junto con el celular del cliente asociado."""
+        cursor = self.connection.cursor(dictionary=True)
+        query = """        
+            SELECT c.cita_id, c.fecha_cita, c.estado_cita, c.motivo, c.fecha_creacion, c.aviso, 
+               cl.cliente_id, cl.nombre, cl.apellido, cl.celular
+            FROM citas c
+            JOIN clientes cl ON c.cliente_id = cl.cliente_id
+            WHERE c.estado_cita = %s
+            """
+        cursor.execute(query, (estado_cita,))
         return cursor.fetchall()
 
     def insertar_pago(self, cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago="pendiente"):
@@ -269,6 +292,14 @@ class DataBaseMySQLManager:
         cursor.execute(sql, (nuevo_estado, cita_id))
         self.connection.commit()
         cursor.close()
+    
+    def actualizar_aviso_cita(self, cita_id, aviso):
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        sql = "UPDATE citas SET aviso = %s WHERE cita_id = %s"
+        cursor.execute(sql, (aviso, cita_id))
+        self.connection.commit()
+        cursor.close()
 
     def obtener_estado_cliente(self, cliente_id):
         self._reconnect_if_needed()
@@ -310,7 +341,7 @@ class DataBaseMySQLManager:
         self.connection.commit()
         cursor.close()
 
-    def agregar_pago_y_confirmar_cita(self, cliente_id, monto, metodo_pago):
+    def agregar_pago_y_confirmar_cita(self, cliente_id, monto, metodo_pago,first_name, last_name,num_operacion=""):
         """
         Agrega un pago relacionado a la cita más próxima del cliente en estado 'agendada'
         y cambia el estado de esa cita a 'confirmada'.
@@ -344,10 +375,10 @@ class DataBaseMySQLManager:
         
         # Insertar el pago relacionado a la cita encontrada
         query_pago = """
-            INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago)
-            VALUES (%s, %s, %s, %s, %s, 'completado')
+            INSERT INTO pagos (cliente_id, cita_id, fecha_pago, monto, metodo_pago, estado_pago,first_name,last_name,num_operacion)
+            VALUES (%s, %s, %s, %s, %s, 'completado',%s,%s,%s)
         """
-        cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago))
+        cursor.execute(query_pago, (cliente_id, cita_id, fecha_pago, monto, metodo_pago,first_name,last_name,num_operacion))
         pago_id = cursor.lastrowid
 
         # Cambiar el estado de la cita a 'confirmada'
@@ -360,3 +391,212 @@ class DataBaseMySQLManager:
         
         print(f"Pago agregado y cita {cita_id} confirmada para el cliente {cliente_id}.")
         return pago_id
+    
+    def marcar_bound(self, cliente_id, bound):
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        query = "UPDATE clientes SET bound = %s WHERE cliente_id = %s"
+        cursor.execute(query, (bound, cliente_id))
+        self.connection.commit()
+        cursor.close()
+        print(f"Cliente {cliente_id} marcado como bound={bound}.")
+
+
+    def obtener_cita_mas_cercana(self, cliente_id):
+        """
+        Obtiene la cita más cercana para un cliente en estado 'agendada'
+        y cuya fecha_cita sea mayor que la fecha actual en la zona horaria de Lima.
+
+        :param cliente_id: ID del cliente.
+        :return: La cita más cercana en estado 'agendada' o None si no se encuentra ninguna.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+            ahora = datetime.now(lima_tz)
+
+            self._reconnect_if_needed()
+            cursor = self.connection.cursor(dictionary=True)
+
+            # Query para buscar la cita más cercana
+            query = """
+                SELECT * FROM citas
+                WHERE cliente_id = %s AND estado_cita = 'agendada' AND fecha_cita > %s
+                ORDER BY fecha_cita ASC
+                LIMIT 1
+            """
+            cursor.execute(query, (cliente_id, ahora))
+            cita = cursor.fetchone()
+            cursor.close()
+
+            if cita:
+                print(f"Cita más cercana encontrada: {cita}")
+            else:
+                print("No se encontró ninguna cita agendada futura para este cliente.")
+
+            return cita
+
+        except Exception as e:
+            print(f"Error al obtener la cita más cercana: {e}")
+            return None
+    
+    def obtener_clientes_por_filtro(self, filtro):
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM clientes WHERE " + filtro
+        cursor.execute(query)
+        return cursor.fetchall()
+    
+    def asociar_cliente_a_campana_mas_reciente(self, cliente_id):
+        """
+        Asocia un cliente a la campaña más reciente que esté activa y devuelve los detalles de la campaña.
+
+        Args:
+            cliente_id (int): ID del cliente a asociar.
+
+        Returns:
+            dict: Detalles de la campaña asociada o None si no hay campañas activas.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor(dictionary=True)
+
+        try:
+            # Obtener la campaña activa más reciente
+            query_campana = """
+                SELECT * FROM campañas
+                WHERE estado_campaña = 'activa' AND tipo = 'in'
+                ORDER BY fecha_creacion DESC
+                LIMIT 1
+            """
+            cursor.execute(query_campana)
+            campana = cursor.fetchone()
+
+            if not campana:
+                print("No hay campañas activas disponibles.")
+                return None
+
+            campana_id = campana['campaña_id']
+
+            # Verificar si ya existe la asociación
+            query_check = """
+                SELECT * FROM cliente_campaña
+                WHERE cliente_id = %s AND campaña_id = %s
+            """
+            cursor.execute(query_check, (cliente_id, campana_id))
+            existe_asociacion = cursor.fetchone()
+
+            if existe_asociacion:
+                print("El cliente ya está asociado a la campaña más reciente.")
+            else:
+                # Insertar la asociación en la tabla intermedia
+                query_insert = """
+                    INSERT INTO cliente_campaña (cliente_id, campaña_id)
+                    VALUES (%s, %s)
+                """
+                cursor.execute(query_insert, (cliente_id, campana_id))
+
+                # Incrementar el num_clientes de la campaña
+                query_update_num_clientes = """
+                    UPDATE campañas
+                    SET num_clientes = num_clientes + 1
+                    WHERE campaña_id = %s
+                """
+                cursor.execute(query_update_num_clientes, (campana_id,))
+
+                self.connection.commit()
+                print(f"Cliente {cliente_id} asociado a la campaña {campana_id} y num_clientes incrementado.")
+
+            return campana
+
+        except Exception as e:
+            print(f"Error al asociar cliente a la campaña: {e}")
+            return None
+
+        finally:
+            cursor.close()
+
+    def buscar_cita_por_fecha_cliente(self, cliente_id, fecha_cita):
+        """
+        Busca una cita agendada para un cliente en una fecha específica.
+        """
+        cursor = self.connection.cursor(dictionary=True)
+        query = "SELECT * FROM citas WHERE cliente_id = %s AND fecha_cita = %s"
+        cursor.execute(query, (cliente_id, fecha_cita))
+        return cursor.fetchone()
+    
+    def obtener_clientes_filtrados(self, fecha_inicio=None, fecha_fin=None, estado=None, limite=None, bound=None):
+        """
+        Obtiene clientes filtrados por fecha de creación, estado (simple o múltiple), bound y/o límite de registros.
+
+        Args:
+            fecha_inicio (str): Fecha inicial en formato 'YYYY-MM-DD'.
+            fecha_fin (str): Fecha final en formato 'YYYY-MM-DD'.
+            estado (str o list): 
+                - Puede ser un string representando un único estado, 
+                - O una lista de strings con múltiples estados, 
+                - O None (no filtra por estado).
+            limite (int): Límite de registros a devolver.
+            bound (bool): Filtrar por si el cliente es bound (True o False).
+
+        Returns:
+            list: Lista de clientes que cumplen con los filtros.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor(dictionary=True)
+
+        # Construcción dinámica de la consulta
+        query = "SELECT * FROM clientes WHERE 1=1"
+        params = []
+
+        # Filtro por fecha de creación (si se proporciona)
+        if fecha_inicio:
+            query += " AND fecha_creacion >= %s"
+            params.append(fecha_inicio)
+        if fecha_fin:
+            query += " AND fecha_creacion <= %s"
+            params.append(fecha_fin)
+
+        # Filtro por estado (si se proporciona)
+        if estado is not None:
+            if isinstance(estado, list):
+                # Estado es una lista de valores
+                placeholders = ", ".join(["%s"] * len(estado))
+                query += f" AND estado IN ({placeholders})"
+                params.extend(estado)
+            else:
+                # Estado es un único valor (string)
+                query += " AND estado = %s"
+                params.append(estado)
+
+        # Filtro por bound (si se proporciona)
+        if bound is not None:
+            query += " AND bound = %s"
+            params.append(bound)
+
+        # Límite de registros (si se proporciona)
+        if limite:
+            query += " LIMIT %s"
+            params.append(limite)
+
+        # Ejecución de la consulta
+        cursor.execute(query, tuple(params))
+        resultados = cursor.fetchall()
+        cursor.close()
+
+        return resultados
+    
+
+    def actualizar_in_out_cliente(self, cliente_id, in_out_valor):
+        """
+        Actualiza el campo in_out para un cliente específico.
+
+        Args:
+            cliente_id (int): ID del cliente a actualizar.
+            in_out_valor (bool): Valor booleano que se asignará al campo in_out.
+        """
+        self._reconnect_if_needed()
+        cursor = self.connection.cursor()
+        query = "UPDATE clientes SET in_out = %s WHERE cliente_id = %s"
+        cursor.execute(query, (in_out_valor, cliente_id))
+        self.connection.commit()
+        cursor.close()
+        print(f"Cliente {cliente_id} se ha actualizado el campo in_out a {in_out_valor}.")

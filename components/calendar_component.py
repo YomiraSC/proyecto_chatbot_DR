@@ -10,8 +10,8 @@ import os.path
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 class GoogleCalendarManager:
-    CALENDAR_ID = "195010dac8c1b91a8bbee7c8b9476895cc5cbf034e9d09bbf9fb7490e3f89d07@group.calendar.google.com"
-
+    #CALENDAR_ID = "195010dac8c1b91a8bbee7c8b9476895cc5cbf034e9d09bbf9fb7490e3f89d07@group.calendar.google.com"
+    CALENDAR_ID = "ifc.citas@gmail.com"
     def __init__(self):
         self.service = self._authenticate()
 
@@ -69,6 +69,9 @@ class GoogleCalendarManager:
             working_hours = [{"start": dt.time(10, 0), "end": dt.time(17, 0)}]  # 10:00 AM a 5:00 PM
         else:
             working_hours = []  # Otros días no tienen disponibilidad
+
+        if fecha == '2025-03-19':
+            working_hours = [{"start": dt.time(16, 00), "end": dt.time(20, 30)}]
 
         start_of_day = lima_tz.localize(dt.datetime.combine(input_date, dt.time(0, 0)))
         end_of_day = lima_tz.localize(dt.datetime.combine(input_date, dt.time(23, 59, 59)))
@@ -230,3 +233,115 @@ class GoogleCalendarManager:
         except Exception as e:
             print(f"Error al reservar cita: {e}")
             return None
+        
+    def eliminar_evento_por_rango_horario(self, fecha, hora_inicio, duracion_minutos=30):
+        """
+        Elimina un evento en Google Calendar basado en la fecha y hora de inicio proporcionadas.
+        
+        :param fecha: Fecha del evento en formato "YYYY-MM-DD".
+        :param hora_inicio: Hora de inicio del evento en formato "HH:MM".
+        :param duracion_minutos: Duración del evento en minutos (por defecto, 30 minutos).
+        :return: True si se eliminó un evento, False si no se encontró ninguno.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+
+            # Convertir la fecha y la hora de inicio a un objeto datetime
+            fecha_obj = dt.datetime.strptime(fecha, "%Y-%m-%d")
+            hora_inicio_obj = dt.datetime.strptime(hora_inicio, "%H:%M").time()
+            inicio = lima_tz.localize(dt.datetime.combine(fecha_obj, hora_inicio_obj))
+
+            # Calcular la hora de fin sumando la duración
+            fin = inicio + dt.timedelta(minutes=duracion_minutos)
+
+            # Listar eventos en el rango horario
+            print(f"Buscando eventos entre {inicio} y {fin} en Google Calendar...")
+            events_result = self.service.events().list(
+                calendarId=self.CALENDAR_ID,
+                timeMin=inicio.isoformat(),
+                timeMax=fin.isoformat(),
+                singleEvents=True,
+                orderBy="startTime"
+            ).execute()
+
+            events = events_result.get("items", [])
+            if not events:
+                print(f"No se encontraron eventos entre {inicio} y {fin}.")
+                return False
+
+            # Eliminar eventos encontrados
+            for event in events:
+                self.service.events().delete(
+                    calendarId=self.CALENDAR_ID,
+                    eventId=event["id"]
+                ).execute()
+                print(f"Evento eliminado: {event['summary']} (ID: {event['id']})")
+
+            return True
+
+        except Exception as e:
+            print(f"Error al eliminar eventos entre {fecha} {hora_inicio}: {e}")
+            return False
+
+
+    def actualizar_evento_a_confirmado(self, fecha, hora_inicio):
+        """
+        Busca un evento en Google Calendar dado una fecha y hora de inicio y actualiza
+        su summary reemplazando la palabra "reservada" por "confirmada".
+
+        :param fecha: Fecha del evento en formato "YYYY-MM-DD".
+        :param hora_inicio: Hora de inicio del evento en formato "HH:MM".
+        :return: True si se actualizó un evento, False si no se encontró ninguno o hubo un error.
+        """
+        try:
+            # Configurar la zona horaria de Lima
+            lima_tz = pytz.timezone("America/Lima")
+
+            # Convertir la fecha y la hora de inicio a un objeto datetime
+            fecha_obj = dt.datetime.strptime(fecha, "%Y-%m-%d")
+            hora_inicio_obj = dt.datetime.strptime(hora_inicio, "%H:%M").time()
+            inicio = lima_tz.localize(dt.datetime.combine(fecha_obj, hora_inicio_obj))
+
+            # Calcular la hora de fin sumando la duración
+            fin = inicio + dt.timedelta(minutes=30)
+
+            # Listar eventos en el rango horario
+            print(f"Buscando eventos entre {inicio} y {fin} en Google Calendar...")
+            events_result = self.service.events().list(
+                calendarId=self.CALENDAR_ID,
+                timeMin=inicio.isoformat(),
+                timeMax=fin.isoformat(),
+                singleEvents=True,
+                orderBy="startTime"
+            ).execute()
+
+            events = events_result.get("items", [])
+            if not events:
+                print(f"No se encontraron eventos entre {inicio} y {fin}.")
+                return False
+
+            # Actualizar el primer evento encontrado
+            for event in events:
+                summary = event.get("summary", "")
+                if "reservada" in summary:
+                    # Reemplazar "reservada" por "confirmada"
+                    nuevo_summary = summary.replace("reservada", "confirmada")
+                    event["summary"] = nuevo_summary
+
+                    # Actualizar el evento en Google Calendar
+                    updated_event = self.service.events().update(
+                        calendarId=self.CALENDAR_ID,
+                        eventId=event["id"],
+                        body=event
+                    ).execute()
+
+                    print(f"Evento actualizado: {updated_event['summary']} (ID: {updated_event['id']})")
+                    return True
+
+            print("No se encontró ningún evento con la palabra 'reservada' en el summary.")
+            return False
+
+        except Exception as e:
+            print(f"Error al actualizar el evento: {e}")
+            return False

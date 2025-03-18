@@ -2,6 +2,41 @@ import re
 import datetime
 import json
 
+def plantilla_seguimiento_interesados_24_01_25():
+    return """
+ ✨ PRP GRATIS ✨
+
+💆‍♂️💆‍♀️ En Instituto Facial y Capilar, este mes, estamos ofreciendo una mesoterapia PRP GRATIS como parte de tu primera cita con nosotros.
+📅 Costo de la cita: S/ 100 (¡Incluye el PRP!).
+💡 Beneficios del PRP:
+-Estimula el crecimiento del cabello.
+-Fortalece los folículos capilares.
+-Mejora la salud del cuero cabelludo.
+
+✅ En tu cita también incluimos:
+
+📋 Examen detallado con dermatoscopio capilar (no invasivo)
+📝 Tratamiento Personalizado
+📊 Determinación de unidades foliculares para trasplante capilar.
+
+📍 Cupos limitados – ¡Reserva tu cita ahora y transforma tu cabello!
+
+📲 Escríbenos para más información   
+"""
+
+def plantilla_promesa_pago_interesados(nombre):
+    return f"""
+Hola {nombre} 👋✨, sabemos lo importante que es para ti recuperar tu pelo 🧑‍🦱 y tu confianza 💪.
+
+Además, estamos con una promoción especial del 60% de descuento 🤑🎉. ¡Es el momento perfecto para dar el paso! 🚀
+
+Responde este mensaje 📩 y con gusto te ayudamos a agendar tu cita 🗓️.
+
+¡Estamos listos para ayudarte a transformar tu vida! 🌟
+
+Mira este caso de éxito real 📸    
+"""
+
 def json_a_lista(datos):
     # Asumimos que `datos` ya es un diccionario JSON
     resultado = [datos.get("intencion")]
@@ -14,6 +49,9 @@ def json_a_lista(datos):
     if "detalle" in datos:
         resultado.append(datos["detalle"])
 
+    if "nombre" in datos:
+        resultado.append(datos["nombre"])
+
     return resultado
 
 def extraer_json(texto):
@@ -24,6 +62,7 @@ def extraer_json(texto):
     match = re.search(patron, texto)
     if match:
         # Convertir la cadena JSON capturada en un diccionario
+        print("JSON detectado:", match.group())
         try:
             resultado = json.loads(match.group())
             return resultado
@@ -183,3 +222,5 @@ def formatear_fecha_hora(fecha_str, hora_str):
     hora_formateada = convertir_a_am_pm(hora_dt)
 
     return fecha_formateada, hora_formateada
+
+

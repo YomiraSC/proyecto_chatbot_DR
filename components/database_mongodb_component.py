@@ -163,8 +163,10 @@ class DataBaseMongoDBManager:
         for conversacion in reversed(cliente.get("conversaciones", [])):
             if conversacion.get("estado") == "activa":
                 # Obtener la última interacción de la conversación activa
-                if conversacion.get("interacciones"):
-                    ultima_interaccion = conversacion["interacciones"][-1]
+                interacciones = conversacion.get("interacciones", [])
+
+                if interacciones:
+                    ultima_interaccion = interacciones[-1]
                     
                     # Concatenar el mensaje si ya existe un mensaje del cliente
                     if "mensaje_cliente" in ultima_interaccion:
@@ -176,9 +178,13 @@ class DataBaseMongoDBManager:
                     # Actualizar la conversación en la base de datos
                     self.db.clientes.update_one(
                         {"celular": celular, "conversaciones.conversacion_id": conversacion["conversacion_id"]},
-                        {"$set": {"conversaciones.$.interacciones": conversacion["interacciones"]}}
+                        {"$set": {"conversaciones.$.interacciones": interacciones}}
                     )
                     return "Mensaje guardado en la última interacción"
+                
+                self.crear_nueva_interaccion(celular, mensaje_cliente)
+
+                return "Mensaje guardado en una nueva interacción de la conversación activa"
         
         return "No se encontró una conversación activa"    
     
@@ -292,3 +298,32 @@ class DataBaseMongoDBManager:
         
         print(f"Cliente con celular {celular} actualizado con éxito.")
         return "Cliente actualizado correctamente."
+
+
+    def contar_interacciones_ultima_conversacion(self, celular):
+        """
+        Cuenta cuántas interacciones tiene la última conversación activa de un cliente.
+
+        Args:
+            celular (str): Número de celular del cliente.
+
+        Returns:
+            int: Número de interacciones en la última conversación activa, o -1 si no hay una conversación activa.
+        """
+        self._reconnect_if_needed()  # Verifica o reconecta
+
+        # Buscar el cliente por su celular
+        cliente = self.db.clientes.find_one({"celular": celular})
+
+        if not cliente:
+            print(f"No se encontró cliente con celular {celular}.")
+            return -1  # Retorna -1 si no se encuentra al cliente
+
+        # Buscar la última conversación activa
+        for conversacion in reversed(cliente.get("conversaciones", [])):
+            if conversacion.get("estado") == "activa":
+                interacciones = conversacion.get("interacciones", [])
+                return len(interacciones)  # Retorna el número de interacciones
+
+        print(f"No se encontró una conversación activa para el cliente con celular {celular}.")
+        return -1  # Retorna -1 si no hay una conversación activa
