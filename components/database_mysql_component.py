@@ -21,7 +21,7 @@ class DataBaseMySQLManager:
                 #database='chatbot_db',
                 #password='26deJULIO@'
                 host='chatbot-mysql.c5yiocg6aj0e.us-east-2.rds.amazonaws.com',
-                database='chatbot_db',
+                database='saas_chatbot',
                 user='admin',
                 password='zQumSnUd9MNtjcsK'
             )
@@ -79,15 +79,15 @@ class DataBaseMySQLManager:
         self.connection.commit()
         return cursor.lastrowid
     
-    def insertar_lead_zoho(self, cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña=None, canal_lead=None, estado_lead="nuevo", notas=None, tipo_lead=None):
-        self._reconnect_if_needed()
-        """Inserta un nuevo lead para un cliente en la tabla de leads."""
-        cursor = self.connection.cursor()
-        query = """INSERT INTO leads (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)"""
-        cursor.execute(query, (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo_lead))
-        self.connection.commit()
-        return cursor.lastrowid
+    # def insertar_lead_zoho(self, cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña=None, canal_lead=None, estado_lead="nuevo", notas=None, tipo_lead=None):
+    #     self._reconnect_if_needed()
+    #     """Inserta un nuevo lead para un cliente en la tabla de leads."""
+    #     cursor = self.connection.cursor()
+    #     query = """INSERT INTO leads (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo)
+    #                VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)"""
+    #     cursor.execute(query, (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas,tipo_lead))
+    #     self.connection.commit()
+    #     return cursor.lastrowid
 
     def obtener_leads_cliente(self, cliente_id):
         self._reconnect_if_needed()
