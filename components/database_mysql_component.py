@@ -70,7 +70,7 @@ class DataBaseMySQLManager:
         return cursor.fetchone()
 
     def insertar_lead(self, cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña=None, canal_lead=None, estado_lead="nuevo", notas=None):
-        self._reconnect_if_needed()
+        self._reconnect_if_needed() 
         """Inserta un nuevo lead para un cliente en la tabla de leads."""
         cursor = self.connection.cursor()
         query = """INSERT INTO leads (cliente_id, fecha_contacto, prioridad_lead, lead_source, campaña, canal_lead, estado_lead, notas)
