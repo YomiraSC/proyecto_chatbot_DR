@@ -3,7 +3,7 @@ import pytz
 from google.cloud import firestore
 
 class DataBaseFirestoreManager:
-    def _init_(self):
+    def __init__(self):
         self.db = self._connect()
         self.tz = pytz.timezone("America/Lima")
     
@@ -20,7 +20,7 @@ class DataBaseFirestoreManager:
     def _reconnect_if_needed(self):
         """Verifica si la conexión sigue activa y la restablece si es necesario."""
         try:
-            _ = self.db.collection("test").document("connection_test").get()  # Verificar si se puede leer un documento
+            _ = self.db.collection("testSaaS").document("connection_test").get()  # Verificar si se puede leer un documento
         except Exception as e:
             print(f"⚠ Conexión perdida, intentando reconectar... {e}")
             self.db = self._connect()
@@ -38,7 +38,7 @@ class DataBaseFirestoreManager:
             "sender": sender
         }
         try:
-            doc_ref = self.db.collection("test").document() 
+            doc_ref = self.db.collection("testSaaS").document() 
             doc_ref.set(data)
             print("✅ Documento creado exitosamente.")
         except Exception as e:
@@ -53,7 +53,7 @@ class DataBaseFirestoreManager:
             start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end_datetime = start_datetime + timedelta(days=1)
 
-            query = (self.db.collection("test")
+            query = (self.db.collection("testSaaS")
                      .where("id_bot", "==", id_bot)
                      .where("celular", "==", celular)
                      .where("fecha", ">=", start_datetime)
@@ -87,7 +87,7 @@ class DataBaseFirestoreManager:
             print(f"   - Hasta: {end_datetime}")
             print(f"🔍 Buscando mensajes para celular: {celular}, id_bot: {id_bot}")
 
-            query = (self.db.collection("test")
+            query = (self.db.collection("testSaaS")
                     .where(field_path="id_bot", op_string="==", value=id_bot)
                     .where(field_path="celular", op_string="==", value=celular)
                     .where(field_path="fecha", op_string=">=", value=start_datetime)
@@ -104,4 +104,4 @@ class DataBaseFirestoreManager:
 
         except Exception as e:
             print(f"❌ Error al recuperar mensajes de hoy: {e}")
-            return []
+            return []

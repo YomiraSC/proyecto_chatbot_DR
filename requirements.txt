@@ -1,15 +1,10 @@
-Flask
-gunicorn
+SQLAlchemy==2.0.36
 openai
 pymongo
-twilio
 google-api-python-client
 google-auth
 google-auth-oauthlib
 pytz
-culqi
 pandas
 mysql.connector
-fcntl
-redis
 google-cloud-firestore
